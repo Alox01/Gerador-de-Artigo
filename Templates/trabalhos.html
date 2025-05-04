@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Trabalhos Salvos</title>
+    <style>
+        body { font-family: Arial; margin: 40px; background: #f9f9f9; }
+        table { border-collapse: collapse; width: 100%; background: white; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+        th { background: #eee; }
+    </style>
+</head>
+<body>
+    <h2>Lista de Trabalhos Salvos</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Autor</th>
+                <th>Data</th>
+                <th>PDF</th>
+                <th>DOCX</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in trabalhos %}
+            <tr>
+                <td>{{ t[0] }}</td>
+                <td>{{ t[1] }}</td>
+                <td>{{ t[2] }}</td>
+                <td>{{ t[3].strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{% if t[4] %}<a href="/download/{{ t[1].replace(' ', '_') }}.pdf">Download</a>{% else %}-{% endif %}</td>
+                <td>{% if t[5] %}<a href="/download/{{ t[1].replace(' ', '_') }}.docx">Download</a>{% else %}-{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
