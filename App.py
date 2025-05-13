@@ -126,29 +126,24 @@ def salvar_em_pdf(titulo, texto, autor):
 
     elementos = []
     
-    from reportlab.platypus import Table, TableStyle
-    from reportlab.lib import colors
+    from reportlab.platypus import KeepTogether
 
     autor_formatado = formatar_autor(autor)
-    autor_para_pdf = Paragraph(autor_formatado, styles['TextoSemRecuo'])
-    tabela_autor = Table([["", autor_para_pdf]], colWidths=[14.5 * cm, 2.5 * cm])
+    autor_sem_quebra = autor_formatado.replace(" ", "\u00A0")
+    autor_para_pdf = Paragraph(autor_sem_quebra, ParagraphStyle(
+        'AutorDireita',
+        parent=styles['TextoSemRecuo'],
+        alignment=2,
+        spaceAfter=12,
+    ))
 
-    tabela_autor.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-        ('TOPPADDING', (0, 0), (-1, -1), 0),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-    ]))
-
-    elementos.append(tabela_autor)
+    elementos.append(autor_para_pdf)
     elementos.append(Spacer(1, 1.2 * cm))
     
     # Título do trabalho
-    elementos.append(Spacer(1, 0.2*cm))
     titulo_upper = titulo.upper()
     elementos.append(Paragraph(titulo_upper, styles['Titulo']))
+    elementos.append(Spacer(1, 0.6*cm))
 
     # Regex para detectar seções
     padroes = {
@@ -325,6 +320,9 @@ def salvar_em_docx(titulo, texto, autor):
 
                 
                 p.paragraph_format.line_spacing = 1.5
+                
+                if secao != "Referências":
+                    p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     print("=== CONTEÚDO FINAL ===")
     for secao, paragrafos in conteudo.items():
