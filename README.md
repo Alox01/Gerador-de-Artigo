@@ -22,5 +22,16 @@ Pré-requisitos
 
 1. Clone o repositório:
 ```bash
-git clone https://github.com/seu-usuario/seu-repositorio.git
+git clone https://github.com/Alox01/Gerador-de-Artigo.git
 cd Gerador-de-Artigo
+
+2. Crie um Ambiente virtual (Opcional):
+
+3. Instale dependências:
+pip install -r requirements.txt
+
+4. Crie um arquivo .env:
+Lá adicione sua chave API
+
+5. Rode o sistema:
+No Terminal digite o comando "python App.py"
