@@ -24,7 +24,7 @@ Pré-requisitos
 ```bash
 git clone https://github.com/Alox01/Gerador-de-Artigo.git
 cd Gerador-de-Artigo
-
+```
 2. Crie um Ambiente virtual (Opcional):
 
 3. Instale dependências:
