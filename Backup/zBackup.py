@@ -2,6 +2,8 @@ from flask import Flask, request, send_from_directory, render_template
 import os
 import google.generativeai as genai
 import re
+from servico_banco import salvar_trabalho
+from servico_banco import listar_trabalhos
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt, RGBColor
@@ -32,6 +34,7 @@ if not os.path.exists(OUTPUT_DIR):
 def formatar_titulo(titulo):
     return titulo.title()
 
+# Função para formatar o autor no formato "SOBRENOME, Nome"
 def formatar_autor(nome):
     partes = nome.strip().split()
     if len(partes) < 2:
@@ -39,7 +42,6 @@ def formatar_autor(nome):
     sobrenome = partes[-1].upper()
     nome = " ".join(partes[:-1])
     return f"{sobrenome}, {nome}"
-
 
 # Função para remover os asteriscos de qualquer parte do texto
 def remover_asteriscos(texto):
@@ -124,29 +126,24 @@ def salvar_em_pdf(titulo, texto, autor):
 
     elementos = []
     
-    from reportlab.platypus import Table, TableStyle
-    from reportlab.lib import colors
-
-    autor_formatado = formatar_autor(autor)
-    autor_para_pdf = Paragraph(autor_formatado, styles['TextoSemRecuo'])
-    tabela_autor = Table([["", autor_para_pdf]], colWidths=[14.5 * cm, 2.5 * cm])
-
-    tabela_autor.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-        ('TOPPADDING', (0, 0), (-1, -1), 0),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-    ]))
-
-    elementos.append(tabela_autor)
-    elementos.append(Spacer(1, 1.2 * cm))
+    from reportlab.platypus import KeepTogether
     
     # Título do trabalho
-    elementos.append(Spacer(1, 0.2*cm))
     titulo_upper = titulo.upper()
     elementos.append(Paragraph(titulo_upper, styles['Titulo']))
+    elementos.append(Spacer(1, 0.6*cm))
+
+    autor_formatado = formatar_autor(autor)
+    autor_sem_quebra = autor_formatado.replace(" ", "\u00A0")
+    autor_para_pdf = Paragraph(autor_sem_quebra, ParagraphStyle(
+        'AutorDireita',
+        parent=styles['TextoSemRecuo'],
+        alignment=2,
+        spaceAfter=12,
+    ))
+
+    elementos.append(autor_para_pdf)
+    elementos.append(Spacer(1, 1.2 * cm))
 
     # Regex para detectar seções
     padroes = {
@@ -222,14 +219,21 @@ def salvar_em_pdf(titulo, texto, autor):
 
     doc.build(elementos)
     print(f"\n✅ PDF salvo como: {nome_arquivo}")
-    return nome_arquivo  # Certifique-se de retornar o caminho do arquivo corretamente
+    return nome_arquivo 
 
 # Função para salvar no DOCX com formatação correta
 def salvar_em_docx(titulo, texto, autor):
     doc = Document()
     
-    doc.add_paragraph("")
-    doc.add_paragraph("")
+    # Título principal
+    titulo_paragrafo = doc.add_paragraph()
+    titulo_paragrafo.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run_titulo = titulo_paragrafo.add_run(titulo.upper())
+    run_titulo.font.name = "Times New Roman"
+    run_titulo.font.size = Pt(16)
+    run_titulo.bold = True
+    
+    # Autor
     par_autor = doc.add_paragraph(formatar_autor(autor))
     par_autor.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     par_autor.paragraph_format.space_after = Pt(20)
@@ -238,14 +242,7 @@ def salvar_em_docx(titulo, texto, autor):
     run_autor.font.size = Pt(12)
     run_autor.font.color.rgb = RGBColor(0, 0, 0)
 
-
-    # Título principal
-    titulo_paragrafo = doc.add_paragraph()
-    titulo_paragrafo.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_titulo = titulo_paragrafo.add_run(titulo.upper())
-    run_titulo.font.name = "Times New Roman"
-    run_titulo.font.size = Pt(16)
-    run_titulo.bold = True
+    
 
 
     # Regex para detectar seções
@@ -323,6 +320,9 @@ def salvar_em_docx(titulo, texto, autor):
 
                 
                 p.paragraph_format.line_spacing = 1.5
+                
+                if secao != "Referências":
+                    p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     print("=== CONTEÚDO FINAL ===")
     for secao, paragrafos in conteudo.items():
@@ -355,6 +355,14 @@ def gerar_trabalho():
 
     trabalho = gerar_artigo_abnt(titulo, tema, autor)
 
+    # SALVAR NO BANCO
+    salvar_trabalho(titulo, tema, autor, trabalho, pdf=True, docx=True)
+
+    # Gerar arquivos
+    nome_docx = os.path.basename(salvar_em_docx(titulo, trabalho, autor))
+    nome_pdf = os.path.basename(salvar_em_pdf(titulo, trabalho, autor))
+
+
     # Gerar arquivos
     nome_docx = os.path.basename(salvar_em_docx(titulo, trabalho, autor))
     nome_pdf = os.path.basename(salvar_em_pdf(titulo, trabalho, autor))
@@ -365,6 +373,11 @@ def gerar_trabalho():
 @app.route('/download/<nome_arquivo>')
 def baixar_arquivo(nome_arquivo):
     return send_from_directory(OUTPUT_DIR, nome_arquivo, as_attachment=True)
+
+@app.route('/trabalhos')
+def trabalhos():
+    lista = listar_trabalhos()
+    return render_template('trabalhos.html', trabalhos=lista)
 
 # Iniciar o servidor Flask
 import webbrowser

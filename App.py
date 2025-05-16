@@ -34,6 +34,7 @@ if not os.path.exists(OUTPUT_DIR):
 def formatar_titulo(titulo):
     return titulo.title()
 
+# Função para formatar o autor no formato "SOBRENOME, Nome"
 def formatar_autor(nome):
     partes = nome.strip().split()
     if len(partes) < 2:
@@ -41,7 +42,6 @@ def formatar_autor(nome):
     sobrenome = partes[-1].upper()
     nome = " ".join(partes[:-1])
     return f"{sobrenome}, {nome}"
-
 
 # Função para remover os asteriscos de qualquer parte do texto
 def remover_asteriscos(texto):
@@ -119,7 +119,7 @@ def salvar_em_pdf(titulo, texto, autor):
 
     # Estilos
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name='Titulo', fontSize=16, spaceAfter=12, alignment=1))
+    styles.add(ParagraphStyle(name='Titulo', fontSize=16, spaceAfter=12, alignment=1, leading=20, firstLineIndent=0, leftIndent=0))
     styles.add(ParagraphStyle(name='Secao', fontSize=14, spaceAfter=8, spaceBefore=12, leading=18, alignment=0, firstLineIndent=0, leftIndent=0))
     styles.add(ParagraphStyle(name='Texto', fontSize=12, leading=18, alignment=TA_JUSTIFY, firstLineIndent=1.25 * cm, spaceAfter=10))
     styles.add(ParagraphStyle(name='TextoSemRecuo', fontSize=12, leading=18, alignment=TA_JUSTIFY, firstLineIndent=0, spaceAfter=10))
@@ -127,6 +127,12 @@ def salvar_em_pdf(titulo, texto, autor):
     elementos = []
     
     from reportlab.platypus import KeepTogether
+    
+    # Título do trabalho
+    titulo_upper = titulo.upper()
+    elementos.append(Paragraph(titulo_upper, styles['Titulo']))
+    elementos.append(Spacer(1, 0.6*cm))
+    
 
     autor_formatado = formatar_autor(autor)
     autor_sem_quebra = autor_formatado.replace(" ", "\u00A0")
@@ -135,15 +141,11 @@ def salvar_em_pdf(titulo, texto, autor):
         parent=styles['TextoSemRecuo'],
         alignment=2,
         spaceAfter=12,
+        fontSize=10,
     ))
 
     elementos.append(autor_para_pdf)
     elementos.append(Spacer(1, 1.2 * cm))
-    
-    # Título do trabalho
-    titulo_upper = titulo.upper()
-    elementos.append(Paragraph(titulo_upper, styles['Titulo']))
-    elementos.append(Spacer(1, 0.6*cm))
 
     # Regex para detectar seções
     padroes = {
@@ -225,17 +227,6 @@ def salvar_em_pdf(titulo, texto, autor):
 def salvar_em_docx(titulo, texto, autor):
     doc = Document()
     
-    doc.add_paragraph("")
-    doc.add_paragraph("")
-    par_autor = doc.add_paragraph(formatar_autor(autor))
-    par_autor.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    par_autor.paragraph_format.space_after = Pt(20)
-    run_autor = par_autor.runs[0]
-    run_autor.font.name = "Times New Roman"
-    run_autor.font.size = Pt(12)
-    run_autor.font.color.rgb = RGBColor(0, 0, 0)
-
-
     # Título principal
     titulo_paragrafo = doc.add_paragraph()
     titulo_paragrafo.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -243,7 +234,16 @@ def salvar_em_docx(titulo, texto, autor):
     run_titulo.font.name = "Times New Roman"
     run_titulo.font.size = Pt(16)
     run_titulo.bold = True
-
+    titulo_paragrafo.paragraph_format.line_spacing = 1.5
+    
+    # Autor
+    par_autor = doc.add_paragraph(formatar_autor(autor))
+    par_autor.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    par_autor.paragraph_format.space_after = Pt(20)
+    run_autor = par_autor.runs[0]
+    run_autor.font.name = "Times New Roman"
+    run_autor.font.size = Pt(10)
+    run_autor.font.color.rgb = RGBColor(0, 0, 0)
 
     # Regex para detectar seções
     padroes = {
@@ -357,11 +357,6 @@ def gerar_trabalho():
 
     # SALVAR NO BANCO
     salvar_trabalho(titulo, tema, autor, trabalho, pdf=True, docx=True)
-
-    # Gerar arquivos
-    nome_docx = os.path.basename(salvar_em_docx(titulo, trabalho, autor))
-    nome_pdf = os.path.basename(salvar_em_pdf(titulo, trabalho, autor))
-
 
     # Gerar arquivos
     nome_docx = os.path.basename(salvar_em_docx(titulo, trabalho, autor))
