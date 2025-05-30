@@ -114,13 +114,14 @@
             <textarea id="texto_editado" name="texto_editado" spellcheck="false">{{ preview }}</textarea>
             
             <div class="btn-downloads">
-                <button type="submit" name="formato" value="docx" class="btn btn-primary">
-                    📄 Baixar DOCX
-                </button>
-                <button type="submit" name="formato" value="pdf" class="btn btn-danger">
-                    📕 Baixar PDF
-                </button>
+             <a href="/download/{{ nome_docx }}" class="btn btn-primary" download>
+             📄 Baixar DOCX
+             </a>
+             <a href="/download/{{ nome_pdf }}" class="btn btn-danger" download>
+             📕 Baixar PDF
+             </a>
             </div>
+
         </form>
 
         <div class="footer-links">
