@@ -3,38 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <title>Trabalhos Salvos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville&display=swap" rel="stylesheet">
+
     <style>
-        body { font-family: Arial; margin: 40px; background: #f9f9f9; }
-        table { border-collapse: collapse; width: 100%; background: white; }
-        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
-        th { background: #eee; }
+        body {
+            background: url('https://cdn.pixabay.com/photo/2016/11/22/19/24/archive-1850170_1280.jpg') no-repeat center center fixed;
+            background-size: cover;
+            font-family: 'Libre Baskerville', serif;
+            margin: 0;
+            padding: 40px;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(3px);
+            z-index: -1;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.75); /* Transparência */
+            backdrop-filter: blur(8px);            /* Efeito vidro fosco */
+            -webkit-backdrop-filter: blur(8px);    /* Safari suporte */
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.25);
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+
+        a {
+            text-decoration: none;
+            color: #005eff;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
+
 <body>
-    <h2>Lista de Trabalhos Salvos</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Título</th>
-                <th>Autor</th>
-                <th>Data</th>
-                <th>PDF</th>
-                <th>DOCX</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for t in trabalhos %}
-            <tr>
-                <td>{{ t[0] }}</td>
-                <td>{{ t[1] }}</td>
-                <td>{{ t[2] }}</td>
-                <td>{{ t[3].strftime('%d/%m/%Y %H:%M') }}</td>
-                <td>{% if t[4] %}<a href="/download/{{ t[1].replace(' ', '_') }}.pdf">Download</a>{% else %}-{% endif %}</td>
-                <td>{% if t[5] %}<a href="/download/{{ t[1].replace(' ', '_') }}.docx">Download</a>{% else %}-{% endif %}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="container">
+        <h2>📁 Lista de Trabalhos Salvos</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Título</th>
+                    <th>Autor</th>
+                    <th>Data</th>
+                    <th>PDF</th>
+                    <th>DOCX</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in trabalhos %}
+                <tr>
+                    <td>{{ t[0] }}</td>
+                    <td>{{ t[1] }}</td>
+                    <td>{{ t[2] }}</td>
+                    <td>{{ t[3].strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>{% if t[4] %}<a href="/download/{{ t[1].replace(' ', '_') }}.pdf">Download</a>{% else %}-{% endif %}</td>
+                    <td>{% if t[5] %}<a href="/download/{{ t[1].replace(' ', '_') }}.docx">Download</a>{% else %}-{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </body>
 </html>
