@@ -1,4 +1,4 @@
-from flask import Flask, request, send_from_directory, render_template
+from flask import Flask, request, send_from_directory, render_template, make_response
 import os
 import google.generativeai as genai
 import re
@@ -15,22 +15,18 @@ from reportlab.lib.units import cm
 from reportlab.lib.enums import TA_JUSTIFY
 from dotenv import load_dotenv
 
-# Carregar a chave de API do arquivo .env
 load_dotenv()
 
 app = Flask(__name__)
 
-# Configuração da API Gemini
 api_key = os.getenv("API_KEY")
 genai.configure(api_key=api_key)
 modelo = genai.GenerativeModel(model_name="gemini-2.0-flash")
 
-# Diretório para salvar os arquivos gerados
 OUTPUT_DIR = "output_files"
 if not os.path.exists(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR)
 
-# Função para formatar o título com a primeira letra de cada palavra em maiúscula
 def formatar_titulo(titulo):
     return titulo.title()
 
@@ -42,22 +38,9 @@ def formatar_autor(nome):
     nome = " ".join(partes[:-1])
     return f"{sobrenome}, {nome}"
 
-
-# Função para remover os asteriscos de qualquer parte do texto
 def remover_asteriscos(texto):
     return re.sub(r"\*+", "", texto)
 
-# Função para formatar parágrafos com recuo de 1,25 cm e espaçamento entre parágrafos de 1,5
-def formatar_paragrafos(doc):
-    for paragrafo in doc.paragraphs:
-        if not paragrafo.style.name.startswith('Heading'):
-            paragrafo.paragraph_format.left_indent = Cm(1.25)
-            paragrafo.paragraph_format.line_spacing = 1.5
-        else:
-            paragrafo.paragraph_format.left_indent = Cm(0)
-
-
-# Função para gerar o artigo
 def gerar_artigo_abnt(titulo, tema, autor):
     titulo = formatar_titulo(titulo)
 
@@ -110,14 +93,12 @@ def gerar_artigo_abnt(titulo, tema, autor):
     resposta = modelo.generate_content(prompt)
     return resposta.text
 
-# Função para salvar o texto no PDF com formatação correta
 def salvar_em_pdf(titulo, texto, autor):
     nome_arquivo = os.path.join(OUTPUT_DIR, titulo.replace(" ", "_") + ".pdf")
     doc = SimpleDocTemplate(nome_arquivo, pagesize=A4,
                             rightMargin=2*cm, leftMargin=2*cm,
                             topMargin=2*cm, bottomMargin=2*cm)
 
-    # Estilos
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name='Titulo', fontSize=16, spaceAfter=12, alignment=1))
     styles.add(ParagraphStyle(name='Secao', fontSize=14, spaceAfter=8, spaceBefore=12, leading=18, alignment=0, firstLineIndent=0, leftIndent=0))
@@ -125,7 +106,6 @@ def salvar_em_pdf(titulo, texto, autor):
     styles.add(ParagraphStyle(name='TextoSemRecuo', fontSize=12, leading=18, alignment=TA_JUSTIFY, firstLineIndent=0, spaceAfter=10))
 
     elementos = []
-    
     from reportlab.platypus import KeepTogether
 
     autor_formatado = formatar_autor(autor)
@@ -139,13 +119,10 @@ def salvar_em_pdf(titulo, texto, autor):
 
     elementos.append(autor_para_pdf)
     elementos.append(Spacer(1, 1.2 * cm))
-    
-    # Título do trabalho
     titulo_upper = titulo.upper()
     elementos.append(Paragraph(titulo_upper, styles['Titulo']))
     elementos.append(Spacer(1, 0.6*cm))
 
-    # Regex para detectar seções
     padroes = {
     "Resumo": re.compile(r"^\s*\d{0,2}\.?\s*resumo\s*:?\s*(.*)$", re.IGNORECASE),
     "Palavras-chave": re.compile(r"^\s*\d{0,2}\.?\s*palavras-chave\s*:?\s*(.*)$", re.IGNORECASE),
@@ -199,8 +176,6 @@ def salvar_em_pdf(titulo, texto, autor):
                     conteudo[atual] = []
                 conteudo[atual].append(linha_limpa)
 
-
-    # Adicionar conteúdo por seção
     for secao in ["Resumo", "Palavras-chave", "Abstract", "Keywords", "Introdução", "Revisão de Literatura", "Metodologia", "Resultados e Discussão", "Conclusão", "Referências"]:
         elementos.append(Paragraph(secao.upper(), styles['Secao']))
         if secao in conteudo and conteudo[secao]:
@@ -211,17 +186,9 @@ def salvar_em_pdf(titulo, texto, autor):
         else:
             elementos.append(Paragraph("Conteúdo não disponível.", styles['Texto']))
 
-    print("=== CONTEÚDO FINAL ===")
-    for secao, paragrafos in conteudo.items():
-        print(f"\n## {secao}")
-        for p in paragrafos:
-            print("-", p)
-
     doc.build(elementos)
-    print(f"\n✅ PDF salvo como: {nome_arquivo}")
     return nome_arquivo 
 
-# Função para salvar no DOCX com formatação correta
 def salvar_em_docx(titulo, texto, autor):
     doc = Document()
     
@@ -235,8 +202,6 @@ def salvar_em_docx(titulo, texto, autor):
     run_autor.font.size = Pt(12)
     run_autor.font.color.rgb = RGBColor(0, 0, 0)
 
-
-    # Título principal
     titulo_paragrafo = doc.add_paragraph()
     titulo_paragrafo.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run_titulo = titulo_paragrafo.add_run(titulo.upper())
@@ -244,8 +209,6 @@ def salvar_em_docx(titulo, texto, autor):
     run_titulo.font.size = Pt(16)
     run_titulo.bold = True
 
-
-    # Regex para detectar seções
     padroes = {
     "Resumo": re.compile(r"^\s*\d{0,2}\.?\s*resumo\s*:?\s*(.*)$", re.IGNORECASE),
     "Palavras-chave": re.compile(r"^\s*\d{0,2}\.?\s*palavras-chave\s*:?\s*(.*)$", re.IGNORECASE),
@@ -299,8 +262,6 @@ def salvar_em_docx(titulo, texto, autor):
                     conteudo[atual] = []
                 conteudo[atual].append(linha_limpa)
 
-
-    # Adicionar conteúdo por seção
     for secao in ["Resumo", "Palavras-chave", "Abstract", "Keywords", "Introdução", "Revisão de Literatura", "Metodologia", "Resultados e Discussão", "Conclusão", "Referências"]:
         heading = doc.add_heading(secao.upper(), level=2)
         heading.paragraph_format.space_after = Pt(10)
@@ -312,38 +273,23 @@ def salvar_em_docx(titulo, texto, autor):
                 run.font.size = Pt(12)
                 run.font.color.rgb = RGBColor(0, 0, 0)
                 
-                # Formatação direta no parágrafo
                 if secao in ["Resumo", "Palavras-chave", "Abstract", "Keywords", "Introdução", "Conclusão", "Referências"]:
                     p.paragraph_format.first_line_indent = Cm(0)
                 else:
                     p.paragraph_format.first_line_indent = Cm(1.25)
 
-                
                 p.paragraph_format.line_spacing = 1.5
-                
                 if secao != "Referências":
                     p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
-    print("=== CONTEÚDO FINAL ===")
-    for secao, paragrafos in conteudo.items():
-        print(f"\n## {secao}")
-        for p in paragrafos:
-            print("-", p)
-
     nome_arquivo = os.path.join(OUTPUT_DIR, titulo.replace(" ", "_") + ".docx")
     doc.save(nome_arquivo)
-    print(f"\n✅ Documento salvo como: {nome_arquivo}")
     return nome_arquivo
-
-# Rota para a página inicial
-from flask import render_template  
 
 @app.route('/')
 def home():
     return render_template('index.html')
 
-
-# Rota para gerar o trabalho e permitir o download
 @app.route('/gerar_trabalho', methods=['POST'])
 def gerar_trabalho():
     autor = request.form.get('autor')
@@ -355,20 +301,39 @@ def gerar_trabalho():
 
     trabalho = gerar_artigo_abnt(titulo, tema, autor)
 
-    # SALVAR NO BANCO
     salvar_trabalho(titulo, tema, autor, trabalho, pdf=True, docx=True)
 
-    # Gerar arquivos
-    nome_docx = os.path.basename(salvar_em_docx(titulo, trabalho, autor))
-    nome_pdf = os.path.basename(salvar_em_pdf(titulo, trabalho, autor))
+    return render_template('download.html', titulo=titulo, autor=autor, preview=trabalho)
 
+@app.route('/baixar_trabalho_editado', methods=['POST'])
+def baixar_trabalho_editado():
+    texto_editado = request.form.get('texto_editado')
+    titulo = request.form.get('titulo')
+    autor = request.form.get('autor')
+    formato = request.form.get('formato')  # "pdf" ou "docx"
 
-    # Gerar arquivos
-    nome_docx = os.path.basename(salvar_em_docx(titulo, trabalho, autor))
-    nome_pdf = os.path.basename(salvar_em_pdf(titulo, trabalho, autor))
+    if not texto_editado or not titulo or not autor or not formato:
+        return "Dados incompletos para geração do arquivo.", 400
 
-    # Mostrar página com os dois botões
-    return render_template('download.html', nome_docx=nome_docx, nome_pdf=nome_pdf)
+    if formato == 'pdf':
+        caminho_arquivo = salvar_em_pdf(titulo, texto_editado, autor)
+    elif formato == 'docx':
+        caminho_arquivo = salvar_em_docx(titulo, texto_editado, autor)
+    else:
+        return "Formato inválido.", 400
+
+    with open(caminho_arquivo, 'rb') as f:
+        dados = f.read()
+
+    nome_arquivo = os.path.basename(caminho_arquivo)
+    response = make_response(dados)
+    if formato == 'pdf':
+        response.headers.set('Content-Type', 'application/pdf')
+    else:
+        response.headers.set('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    response.headers.set('Content-Disposition', 'attachment', filename=nome_arquivo)
+
+    return response
 
 @app.route('/download/<nome_arquivo>')
 def baixar_arquivo(nome_arquivo):
@@ -379,7 +344,6 @@ def trabalhos():
     lista = listar_trabalhos()
     return render_template('trabalhos.html', trabalhos=lista)
 
-# Iniciar o servidor Flask
 import webbrowser
 import threading
 
@@ -389,4 +353,3 @@ def abrir_navegador():
 if __name__ == "__main__":
     threading.Timer(1.0, abrir_navegador).start()
     app.run(debug=True, use_reloader=False)
-

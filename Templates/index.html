@@ -29,26 +29,37 @@
             border-radius: 5px;
             font-size: 0.95rem;
         }
+
+        #progressContainer {
+            display: none;
+            margin-top: 20px;
+        }
+
+        #mensagemStatus {
+            text-align: center;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+       
     </style>
 </head>
 
 <body>
     <div class="container">
         <h2 class="text-center mb-4">📄 Gerador de Artigos Acadêmicos</h2>
-        <form action="/gerar_trabalho" method="POST">
+
+        <form id="formTrabalho" action="/gerar_trabalho" method="POST">
             <div class="mb-3">
                 <label for="autor" class="form-label">Nome do Autor</label>
                 <input type="text" class="form-control" id="autor" name="autor" placeholder="Ex: Apolinário Bay" required>
             </div>            
             <div class="mb-3">
                 <label for="titulo" class="form-label">Título do Artigo</label>
-                <input type="text" class="form-control" id="titulo" name="titulo"
-                    placeholder="Digite o título do artigo" required>
+                <input type="text" class="form-control" id="titulo" name="titulo" placeholder="Digite o título do artigo" required>
             </div>
             <div class="mb-3">
                 <label for="tema" class="form-label">Tema</label>
-                <input type="text" class="form-control" id="tema" name="tema" placeholder="Digite o tema do artigo"
-                    required>
+                <input type="text" class="form-control" id="tema" name="tema" placeholder="Digite o tema do artigo" required>
             </div>
             <div class="mb-3">
                 <label class="form-label">Formato de Arquivo</label>
@@ -59,15 +70,57 @@
                 <input type="hidden" name="formato" value="ambos">
             </div>
             <div class="d-grid">
-                <button type="submit" class="btn btn-primary">Gerar Trabalho</button>
+                <button type="submit" class="btn btn-primary" id="btnGerar">Gerar Trabalho</button>
             </div>
+
+            <!-- Barra de progresso -->
+            <div id="progressContainer">
+                <div class="progress mt-4">
+                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                        0%
+                    </div>
+                </div>
+                <div id="mensagemStatus">Gerando artigo...</div>
+            </div>
+            <a href="/trabalhos" 
+             style="display: block; margin: 20px auto 0; padding: 10px 40px; border: 1px solid black; background: #ddd; color: black; text-decoration: none; text-align: center; width: fit-content;">
+             Ver Trabalhos Salvos
+            </a>
         </form>
     </div>
 
-    <a href="/trabalhos">
-        <button style="margin-top: 20px; padding: 10px 20px;">Ver Trabalhos Salvos</button>
-    </a>
     
-</body>
 
+    <!-- Script da barra -->
+    <script>
+        const form = document.getElementById("formTrabalho");
+        const btn = document.getElementById("btnGerar");
+        const progressContainer = document.getElementById("progressContainer");
+        const progressBar = document.getElementById("progressBar");
+        const mensagem = document.getElementById("mensagemStatus");
+
+        form.addEventListener("submit", function (e) {
+            e.preventDefault(); // impede envio imediato
+
+            btn.disabled = true;
+            progressContainer.style.display = "block";
+
+            let progress = 0;
+            const interval = setInterval(() => {
+                if (progress < 100) {
+                    progress++;
+                    progressBar.style.width = progress + "%";
+                    progressBar.innerText = progress + "%";
+                } else {
+                    clearInterval(interval);
+                }
+            }, 160); // tempo para o carregamento 
+
+            setTimeout(() => {
+                form.submit();
+            }, 50); 
+        });
+    </script>
+</body>
 </html>
