@@ -465,6 +465,25 @@ def trabalhos():
 def abrir_navegador():
     webbrowser.open_new("http://127.0.0.1:5000")
 
+@app.route('/baixar_trabalho_editado', methods=['POST'])
+def baixar_trabalho_editado():
+    texto = request.form.get('texto_editado')
+    titulo = request.form.get('titulo')
+    autor = request.form.get('autor')
+    formato = request.form.get('formato')  # 'docx' ou 'pdf'
+
+    if not texto or not titulo:
+        return "Erro: Texto e Título são obrigatórios", 400
+
+    if formato == 'pdf':
+        caminho = salvar_em_pdf(titulo, texto, autor)
+    else:
+        caminho = salvar_em_docx(titulo, texto, autor)
+
+    nome_arquivo = os.path.basename(caminho)
+    return send_from_directory(OUTPUT_DIR, nome_arquivo, as_attachment=True)
+
+
 if __name__ == "__main__":
     threading.Timer(1.0, abrir_navegador).start()
     app.run(debug=True, use_reloader=False)
